@@ -1,0 +1,135 @@
+package com.example.books_service.services.impl;
+
+
+import com.example.books_service.dto.AuthorDTO;
+import com.example.books_service.dto.BookRequest;
+import com.example.books_service.dto.BookResponse;
+import com.example.books_service.exceptions.NotCreatedException;
+import com.example.books_service.exceptions.NotFoundException;
+import com.example.books_service.model.Author;
+import com.example.books_service.model.Book;
+import com.example.books_service.repositories.AuthorRepository;
+import com.example.books_service.repositories.BookRepository;
+import com.example.books_service.services.BookService;
+import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class BookServiceImpl implements BookService {
+    private final BookRepository bookRepository;
+    private final ModelMapper modelMapper;
+    private final AuthorRepository authorRepository;
+    private static final String LIBRARY_MODULE_URI = "http://localhost:8080/api/library";
+    private final WebClient webClient;
+    private String token;
+
+    private BookResponse toDTO(Book book){
+        return modelMapper.map(book, BookResponse.class);
+    }
+    private Book toBook(BookRequest dto){
+        return modelMapper.map(dto, Book.class);
+    }
+
+
+    @Override
+    @Transactional
+    public void add(BookRequest dto) {
+        Book book = toBook(dto);
+        if (bookRepository.findByIsbn(dto.getIsbn()).isPresent()) {
+            throw new NotCreatedException("Книга с isbn " + dto.getIsbn() + " уже существует");
+        }
+
+        AuthorDTO authorDTO = dto.getAuthor();
+        Author author = authorRepository
+                .findByNameAndSurnameAndPatronymic(authorDTO.getName(), authorDTO.getSurname(), authorDTO.getPatronymic())
+                .orElseGet(() -> {
+                    Author newAuthor = new Author();
+                    newAuthor.setName(authorDTO.getName());
+                    newAuthor.setSurname(authorDTO.getSurname());
+                    newAuthor.setPatronymic(authorDTO.getPatronymic());
+                    return authorRepository.save(newAuthor);
+                });
+
+        book.setAuthor(author);
+        bookRepository.save(book);
+        sendCreationRequest(book.getId());
+    }
+
+    private void sendCreationRequest(Long id) {
+        webClient.post()
+                .uri(LIBRARY_MODULE_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(id)
+                .header("Authorization", this.token)
+                .retrieve()
+                .toBodilessEntity().block();
+    }
+
+    private void sendDeleteRequest(Long id){
+        webClient.delete()
+                .uri(LIBRARY_MODULE_URI+"/"+id)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+
+    @Override
+    public BookResponse findById(Long id) {
+        if (bookRepository.findById(id).isEmpty()){
+            throw new NotFoundException("Книга с id "+id+" не найдена");
+        }
+        Book book=bookRepository.findById(id).get();
+        return toDTO(book);
+    }
+
+    @Override
+    public List<BookResponse> findAll() {
+        List<Book> books=bookRepository.findAll();
+        return books.stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    @Override
+    public void update(BookRequest dto, Long id) {
+        if (bookRepository.findById(id).isEmpty()) {
+            throw new NotFoundException("Книга с id " + id + " не найдена");
+        }
+        Book book = toBook(dto);
+        book.setId(id);
+        Author author = authorRepository.save(modelMapper.map(dto.getAuthor(), Author.class));
+        book.setAuthor(author);
+        bookRepository.save(book);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        if (bookRepository.findById(id).isEmpty()){
+            throw new NotFoundException("Книга с id "+id+" не найдена");
+        }
+        bookRepository.deleteById(id);
+        sendDeleteRequest(id);
+    }
+
+
+    @Override
+    public BookResponse findByIsbn(String isbn) {
+        if (bookRepository.findByIsbn(isbn).isEmpty()){
+            throw new NotFoundException("Книга с isbn "+isbn+" не найдена");
+        }
+        return toDTO(bookRepository.findByIsbn(isbn).get());
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+}
