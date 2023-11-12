@@ -1,5 +1,6 @@
 package com.example.books_service.exceptions.handler;
 
+import com.example.books_service.exceptions.WebClientException;
 import com.example.books_service.exceptions.response.ExceptionResponse;
 import com.example.books_service.exceptions.NotCreatedException;
 import com.example.books_service.exceptions.NotFoundException;
@@ -23,6 +24,14 @@ public class BookExceptionHandler {
         ExceptionResponse response=
                 new ExceptionResponse( HttpStatus.BAD_REQUEST,
                         notCreatedException.getMessage()
+                );
+        return new ResponseEntity<>(response,response.getStatus());
+    }
+    @ExceptionHandler(value = {WebClientException.class})
+    public ResponseEntity<Object> handleNotCreatedException(WebClientException webClientException){
+        ExceptionResponse response=
+                new ExceptionResponse( HttpStatus.BAD_REQUEST,
+                        webClientException.getMessage()
                 );
         return new ResponseEntity<>(response,response.getStatus());
     }

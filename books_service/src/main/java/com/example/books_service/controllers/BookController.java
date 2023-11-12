@@ -66,9 +66,8 @@ public class BookController {
             summary = "Редактирование информации о книге",
             description = "Аргументами являются id изменяемой книги и dto с данными о книге и уже внесенными изменениями"
     )
-    public ResponseEntity<String> updateBook(@PathVariable Long id,@RequestBody BookRequest bookRequest,@RequestHeader("Authorization") String token)
+    public ResponseEntity<String> updateBook(@PathVariable Long id,@RequestBody BookRequest bookRequest)
     {
-        bookService.setToken(token);
         bookService.update(bookRequest,id);
         return ResponseEntity.ok("Изменена книга с id " + id);
     }

@@ -24,7 +24,7 @@ public class LibraryController {
     @PostMapping
     @Operation(hidden = true)
     public ResponseEntity<String> createBook(@RequestBody Long id) {
-        System.err.println(id);
+
         libraryService.add(id);
         return ResponseEntity.ok("Добавлена книга с id " + id);
     }
@@ -37,9 +37,11 @@ public class LibraryController {
     }
     @GetMapping("/available")
     @Operation(
-            summary = "Получение информации о доступнх книгах"
+            summary = "Получение информации о доступных книгах"
     )
-    public ResponseEntity<List<Object>> availableBooks(){
+    @SecurityRequirement(name = "BearerAuth")
+    public ResponseEntity<List<Object>> availableBooks(@RequestHeader("Authorization") String token){
+        libraryService.setToken(token);
         return ResponseEntity.ok(libraryService.findAvailableBooks());
     }
 
@@ -49,8 +51,7 @@ public class LibraryController {
             description = "Если книга была доступна, то ей назначается время когда ее взяли и когда требуется вернуть"
     )
     @SecurityRequirement(name = "BearerAuth")
-    public ResponseEntity<String> changeAvailability(@PathVariable Long id,@RequestHeader("Authorization") String token){
-        libraryService.setToken(token);
+    public ResponseEntity<String> changeAvailability(@PathVariable Long id){
         libraryService.changeAvailability(id);
         return ResponseEntity.ok("Статус книги с id " + id + " изменен");
     }

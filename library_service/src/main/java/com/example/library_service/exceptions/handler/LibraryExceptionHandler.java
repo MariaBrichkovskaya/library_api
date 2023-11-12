@@ -2,6 +2,7 @@ package com.example.library_service.exceptions.handler;
 
 import com.example.library_service.exceptions.NotCreatedException;
 import com.example.library_service.exceptions.NotFoundException;
+import com.example.library_service.exceptions.WebClientException;
 import com.example.library_service.exceptions.response.ExceptionResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,14 @@ public class LibraryExceptionHandler {
         ExceptionResponse response=
                 new ExceptionResponse( HttpStatus.BAD_REQUEST,
                         notCreatedException.getMessage()
+                );
+        return new ResponseEntity<>(response,response.getStatus());
+    }
+    @ExceptionHandler(value = {WebClientException.class})
+    public ResponseEntity<Object> handleNotCreatedException(WebClientException webClientException){
+        ExceptionResponse response=
+                new ExceptionResponse( HttpStatus.BAD_REQUEST,
+                        webClientException.getMessage()
                 );
         return new ResponseEntity<>(response,response.getStatus());
     }

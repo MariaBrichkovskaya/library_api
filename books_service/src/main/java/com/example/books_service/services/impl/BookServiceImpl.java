@@ -6,6 +6,7 @@ import com.example.books_service.dto.BookRequest;
 import com.example.books_service.dto.BookResponse;
 import com.example.books_service.exceptions.NotCreatedException;
 import com.example.books_service.exceptions.NotFoundException;
+import com.example.books_service.exceptions.WebClientException;
 import com.example.books_service.model.Author;
 import com.example.books_service.model.Book;
 import com.example.books_service.repositories.AuthorRepository;
@@ -49,17 +50,16 @@ public class BookServiceImpl implements BookService {
         AuthorDTO authorDTO = dto.getAuthor();
         Author author = authorRepository
                 .findByNameAndSurnameAndPatronymic(authorDTO.getName(), authorDTO.getSurname(), authorDTO.getPatronymic())
-                .orElseGet(() -> {
-                    Author newAuthor = new Author();
-                    newAuthor.setName(authorDTO.getName());
-                    newAuthor.setSurname(authorDTO.getSurname());
-                    newAuthor.setPatronymic(authorDTO.getPatronymic());
-                    return authorRepository.save(newAuthor);
-                });
+                .orElseGet(() -> createAuthor(authorDTO));
 
         book.setAuthor(author);
         bookRepository.save(book);
         sendCreationRequest(book.getId());
+    }
+
+    private Author createAuthor(AuthorDTO authorDTO){
+        Author newAuthor = modelMapper.map(authorDTO, Author.class);
+        return authorRepository.save(newAuthor);
     }
 
     private void sendCreationRequest(Long id) {
@@ -67,16 +67,20 @@ public class BookServiceImpl implements BookService {
                 .uri(LIBRARY_MODULE_URI)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(id)
-                .header("Authorization", this.token)
+                .header("Authorization", token)
                 .retrieve()
-                .toBodilessEntity().block();
+                .toBodilessEntity()
+                .doOnError(throwable -> {throw new WebClientException(throwable.getMessage());})
+                .block();
     }
 
     private void sendDeleteRequest(Long id){
         webClient.delete()
                 .uri(LIBRARY_MODULE_URI+"/"+id)
+                .header("Authorization", token)
                 .retrieve()
                 .toBodilessEntity()
+                .doOnError(throwable -> {throw new WebClientException(throwable.getMessage());})
                 .block();
     }
 

@@ -3,6 +3,7 @@ package com.example.library_service.service.impl;
 import com.example.library_service.dto.CreationRequest;
 import com.example.library_service.dto.LibraryDTO;
 import com.example.library_service.exceptions.NotFoundException;
+import com.example.library_service.exceptions.WebClientException;
 import com.example.library_service.model.Library;
 import com.example.library_service.repositories.LibraryRepository;
 import com.example.library_service.service.LibraryService;
@@ -55,6 +56,7 @@ public class LibraryServiceImpl implements LibraryService {
                     .header("Authorization", token)
                     .retrieve()
                     .bodyToMono(Object.class)
+                    .doOnError(throwable -> {throw new WebClientException(throwable.getMessage());})
                     .block();
             availableBooks.add(book);
         });
