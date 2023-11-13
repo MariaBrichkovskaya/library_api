@@ -3,6 +3,7 @@ package com.example.library_service.controllers;
 import com.example.library_service.dto.CreationRequest;
 import com.example.library_service.service.LibraryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -40,7 +41,7 @@ public class LibraryController {
             summary = "Получение информации о доступных книгах"
     )
     @SecurityRequirement(name = "BearerAuth")
-    public ResponseEntity<List<Object>> availableBooks(@RequestHeader("Authorization") String token){
+    public ResponseEntity<List<Object>> availableBooks(@Parameter(hidden = true) @RequestHeader("Authorization") String token){
         libraryService.setToken(token);
         return ResponseEntity.ok(libraryService.findAvailableBooks());
     }
@@ -50,7 +51,6 @@ public class LibraryController {
             summary = "Изменение доступности книги по id",
             description = "Если книга была доступна, то ей назначается время когда ее взяли и когда требуется вернуть"
     )
-    @SecurityRequirement(name = "BearerAuth")
     public ResponseEntity<String> changeAvailability(@PathVariable Long id){
         libraryService.changeAvailability(id);
         return ResponseEntity.ok("Статус книги с id " + id + " изменен");

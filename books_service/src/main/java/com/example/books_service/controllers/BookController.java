@@ -5,6 +5,7 @@ import com.example.books_service.dto.BookRequest;
 import com.example.books_service.dto.BookResponse;
 import com.example.books_service.services.BookService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
@@ -31,22 +32,22 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
     @PostMapping
-    @SecurityRequirement(name = "BearerAuth")
     @Operation(
             summary = "Создание книги"
     )
-    public ResponseEntity<String> createBook(@RequestBody BookRequest bookDTO,  @RequestHeader("Authorization") String token) {
+    @SecurityRequirement(name = "BearerAuth")
+    public ResponseEntity<String> createBook(@RequestBody BookRequest bookDTO,  @Parameter(hidden = true) @RequestHeader("Authorization") String token) {
         bookService.setToken(token);
         bookService.add(bookDTO);
         return ResponseEntity.ok("Добавлена книга " + bookDTO.getName());
     }
 
     @DeleteMapping("/{id}")
-    @SecurityRequirement(name = "BearerAuth")
     @Operation(
             summary = "Удаление книги по id"
     )
-    public ResponseEntity<String> deleteBook(@PathVariable Long id, @RequestHeader("Authorization") String token){
+    @SecurityRequirement(name = "BearerAuth")
+    public ResponseEntity<String> deleteBook(@PathVariable Long id,@Parameter(hidden = true) @RequestHeader(value = "Authorization") String token){
         bookService.setToken(token);
         bookService.delete(id);
         return ResponseEntity.ok("Удалена книга с id " + id);
@@ -61,7 +62,6 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
-    @SecurityRequirement(name = "BearerAuth")
     @Operation(
             summary = "Редактирование информации о книге",
             description = "Аргументами являются id изменяемой книги и dto с данными о книге и уже внесенными изменениями"
