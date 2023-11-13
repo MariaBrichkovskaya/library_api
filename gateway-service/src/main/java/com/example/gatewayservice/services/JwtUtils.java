@@ -33,4 +33,13 @@ public class JwtUtils {
             return false;
         }
     }
+
+    public boolean validateToken(final String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

@@ -16,6 +16,9 @@ import reactor.core.publisher.Mono;
 @Component
 public class AuthenticationFilter implements GatewayFilter {
 
+    private static final int JWT_START_INDEX_IN_TOKEN = 7;
+    private static final String TOKEN_PREFIX = "Bearer ";
+
     @Autowired
     private RouterValidator validator;
     @Autowired
@@ -29,9 +32,13 @@ public class AuthenticationFilter implements GatewayFilter {
             if (authMissing(request)) {
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
-
-            final String token = request.getHeaders().getOrEmpty("Authorization").get(0);
-
+            String token = request.getHeaders().getOrEmpty("Authorization").get(0);
+            if (token != null && token.startsWith(TOKEN_PREFIX)) {
+                token = token.substring(JWT_START_INDEX_IN_TOKEN);
+            }
+            if (!jwtUtils.validateToken(token)) {
+                return onError(exchange, HttpStatus.UNAUTHORIZED);
+            }
             if (jwtUtils.isExpired(token)) {
                 return onError(exchange, HttpStatus.UNAUTHORIZED);
             }
